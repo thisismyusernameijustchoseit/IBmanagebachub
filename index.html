@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Schedule Planner</title>
+<style>
+:root {
+  --bg: #FFF9F2;
+  --surface: #FFFFFF;
+  --text: #1B2438;
+  --text-secondary: #6E7787;
+  --coral: #E25B3E;
+  --coral-light: #FFF0EC;
+  --sage: #4E8C6F;
+  --sage-light: #EDF6F0;
+  --amber: #D4993D;
+  --amber-light: #FFF7EA;
+  --navy: #1B2438;
+  --border: #E8E0D8;
+  --shadow: 0 2px 12px rgba(27,36,56,0.07);
+  --shadow-lg: 0 8px 32px rgba(27,36,56,0.10);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --font: -apple-system, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+.view { display: none !important; }
+.view.active { display: block !important; }
+#landing-page.active { display: flex !important; }
+#setup-chooser.active { display: flex !important; }
+.container { max-width: 600px; margin: 0 auto; padding: 24px 20px 80px; }
+.container.wide { max-width: 900px; }
+h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 24px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; font-family: var(--font); border: none; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: var(--coral); color: white; }
+.btn-primary:hover { background: #d04e32; }
+.btn-secondary { background: transparent; color: var(--text-secondary); border: 2px solid var(--border); }
+.btn-secondary:hover { border-color: var(--text-secondary); color: var(--text); }
+.btn-small { padding: 8px 14px; font-size: 13px; }
+.btn-danger { background: #dc2626; color: white; }
+.btn-row { display: flex; justify-content: space-between; margin-top: 32px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+input[type="text"], input[type="date"], input[type="url"], select, textarea { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font); background: var(--surface); color: var(--text); transition: border-color 0.2s; outline: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--coral); }
+textarea { resize: vertical; min-height: 120px; font-family: var(--mono); font-size: 12px; }
+#landing-page { min-height: 100vh; flex-direction: column; background: #fbfbfd; }
+.landing-nav { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: rgba(251,251,253,0.8); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.landing-nav .nav-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; color: #1d1d1f; }
+.hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 24px 60px; }
+.hero-eyebrow { font-size: 17px; font-weight: 600; color: var(--coral); letter-spacing: -0.2px; margin-bottom: 16px; opacity: 0; animation: fadeUp 0.8s ease forwards 0.2s; }
+.hero h1 { font-size: clamp(48px, 8vw, 76px); font-weight: 700; letter-spacing: -0.04em; line-height: 1.05; max-width: 760px; margin-bottom: 20px; opacity: 0; animation: fadeUp 0.8s ease forwards 0.4s; }
+.hero h1 .gradient { background: linear-gradient(135deg, #E25B3E 0%, #D4993D 50%, #4E8C6F 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero-sub { font-size: clamp(17px, 2.5vw, 21px); color: #6e6e73; max-width: 500px; line-height: 1.5; margin-bottom: 48px; opacity: 0; animation: fadeUp 0.8s ease forwards 0.6s; }
+.hero-btn { display: inline-flex; align-items: center; padding: 16px 36px; border-radius: 980px; font-size: 17px; font-weight: 600; font-family: var(--font); background: #1d1d1f; color: #fff; border: none; cursor: pointer; transition: all 0.3s; opacity: 0; animation: fadeUp 0.8s ease forwards 0.8s; }
+.hero-btn:hover { background: #000; transform: scale(1.02); }
+.features-row { display: flex; gap: 16px; max-width: 820px; margin: 0 auto; padding: 0 24px 80px; opacity: 0; animation: fadeUp 0.8s ease forwards 1s; }
+.feature-pill { flex: 1; background: #fff; border-radius: 16px; padding: 24px 20px; text-align: center; box-shadow: 0 2px 16px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04); }
+.feature-pill .icon { font-size: 24px; margin-bottom: 10px; }
+.feature-pill h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.feature-pill p { font-size: 12px; color: #6e6e73; line-height: 1.4; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+#setup-chooser { min-height: 100vh; align-items: center; justify-content: center; padding: 24px; background: var(--bg); }
+.chooser-wrap { display: flex; gap: 0; max-width: 780px; width: 100%; border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-lg); }
+.chooser-main { flex: 1.2; background: var(--surface); padding: 52px 44px; display: flex; flex-direction: column; justify-content: center; }
+.chooser-main h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }
+.chooser-main p { color: var(--text-secondary); font-size: 15px; line-height: 1.6; margin-bottom: 32px; }
+.chooser-main .btn { padding: 14px 32px; font-size: 16px; }
+.chooser-side { flex: 0.8; background: linear-gradient(145deg, #6366F1 0%, #4F46E5 100%); padding: 44px 32px; display: flex; flex-direction: column; justify-content: center; color: white; }
+.chooser-side .side-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 14px; }
+.chooser-side h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.3px; }
+.chooser-side p { font-size: 14px; opacity: 0.85; line-height: 1.5; margin-bottom: 28px; }
+.chooser-side .btn-quick { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 24px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; font-family: var(--font); border: 2px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.15); color: white; cursor: pointer; transition: all 0.2s; width: 100%; margin-bottom: 12px; }
+.chooser-side .btn-quick:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.7); }
+.chooser-side input[type="file"] { display: none; }
+.import-status { font-size: 13px; margin-top: 8px; padding: 8px 12px; border-radius: 8px; }
+.import-status.success { background: rgba(255,255,255,0.2); }
+.import-status.error { background: rgba(255,100,100,0.2); }
+@media (max-width: 640px) { .chooser-wrap { flex-direction: column; } .chooser-main, .chooser-side { flex: none; } .chooser-main { padding: 36px 28px; } .chooser-side { padding: 32px 28px; } .features-row { flex-direction: column; } }
+.setup-header { text-align: center; margin-bottom: 32px; }
+.setup-header h1 { font-size: 28px; margin-bottom: 4px; }
+.setup-header .subtitle { color: var(--text-secondary); font-size: 15px; }
+.progress-bar { display: flex; gap: 8px; margin-bottom: 36px; }
+.progress-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+.progress-dot.filled { background: var(--coral); }
+.step-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.step-desc { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+.inline-fields { display: flex; gap: 10px; align-items: end; }
+.inline-fields > * { flex: 1; }
+.inline-fields .narrow { flex: 0 0 100px; }
+.grid-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -20px; padding: 0 20px 16px; }
+.schedule-grid { display: grid; grid-template-columns: 72px repeat(8, minmax(100px, 1fr)); gap: 3px; min-width: 880px; }
+.grid-header { padding: 10px 6px; text-align: center; font-size: 13px; font-weight: 700; border-radius: 8px 8px 0 0; color: white; }
+.grid-row-label { padding: 8px 6px; font-size: 12px; font-weight: 700; color: var(--text-secondary); display: flex; align-items: center; background: var(--bg); border-radius: 6px; white-space: nowrap; }
+.grid-cell { background: var(--surface); border: 2px solid var(--border); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; gap: 2px; transition: border-color 0.2s; }
+.grid-cell:focus-within { border-color: var(--coral); }
+.grid-cell input { border: none; padding: 6px; font-size: 13px; font-family: var(--font); background: transparent; color: var(--text); outline: none; width: 100%; }
+.grid-cell input.room-input { font-size: 11px; color: var(--text-secondary); padding: 3px 6px; border-top: 1px solid var(--border); }
+.grid-cell input::placeholder { color: #c5bfb6; }
+.grid-hint { font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center; }
+.main-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.date-display .weekday { font-size: 15px; color: var(--text-secondary); margin-bottom: 2px; }
+.gear-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+.gear-btn:hover { border-color: var(--coral); color: var(--coral); }
+.rotation-badge { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 700; color: white; margin: 12px 0 6px; }
+.day-override-btn { background: none; border: none; font-size: 12px; color: var(--text-secondary); text-decoration: underline; cursor: pointer; margin-left: 8px; font-family: var(--font); }
+.day-notice { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; margin: 12px 0; display: flex; align-items: center; gap: 8px; }
+.day-notice.friday { background: var(--amber-light); color: #9A7220; }
+.day-notice.tuesday { background: #EDF0FF; color: #4A5BA8; }
+.day-nav { display: flex; justify-content: center; gap: 12px; margin: 8px 0 24px; }
+.nav-btn { padding: 8px 16px; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.nav-btn:hover { border-color: var(--coral); color: var(--coral); }
+.nav-btn.today-btn { background: var(--navy); color: white; border-color: var(--navy); }
+.schedule-list { display: flex; flex-direction: column; gap: 8px; margin: 20px 0; }
+.period-card { background: var(--surface); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); display: flex; gap: 14px; align-items: flex-start; transition: all 0.2s; border-left: 4px solid transparent; }
+.period-card.current { border-left-color: var(--sage); background: var(--sage-light); }
+.period-card.break-card { background: transparent; box-shadow: none; padding: 8px 18px; opacity: 0.6; border-left: none; }
+.period-card.advisory-card { border-left-color: var(--amber); }
+.period-time { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); min-width: 55px; padding-top: 2px; flex-shrink: 0; }
+.period-info { flex: 1; }
+.period-name { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
+.period-class { color: var(--text-secondary); font-size: 14px; }
+.period-room { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.now-badge { font-size: 11px; font-weight: 700; background: var(--sage); color: white; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; align-self: center; }
+.progress-track { height: 3px; background: rgba(78,140,111,0.2); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--sage); border-radius: 2px; transition: width 30s linear; }
+.end-notice { text-align: center; padding: 12px; background: #EDF0FF; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: #4A5BA8; margin-top: 8px; }
+.events-section { margin-top: 32px; }
+.section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-title .line { flex: 1; height: 1px; background: var(--border); }
+.event-card { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; background: var(--surface); border-radius: var(--radius-sm); margin-bottom: 8px; box-shadow: var(--shadow); }
+.event-date-badge { background: var(--coral-light); color: var(--coral); font-weight: 700; font-size: 12px; padding: 6px 10px; border-radius: 8px; text-align: center; min-width: 48px; flex-shrink: 0; }
+.event-date-badge .month { font-size: 10px; text-transform: uppercase; }
+.event-date-badge .day { font-size: 16px; line-height: 1.1; }
+.event-info .event-name { font-weight: 600; font-size: 14px; }
+.event-info .event-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.no-events { text-align: center; color: var(--text-secondary); font-size: 14px; padding: 24px; background: var(--surface); border-radius: var(--radius-sm); border: 2px dashed var(--border); }
+.settings-header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.back-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.back-btn:hover { border-color: var(--coral); }
+.settings-section { margin-bottom: 32px; }
+.settings-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+.danger-zone { border: 2px solid #fecaca; border-radius: var(--radius); padding: 20px; background: #fff5f5; }
+.danger-zone h3 { font-size: 14px; font-weight: 700; color: #b91c1c; margin-bottom: 8px; }
+.danger-zone p { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+.export-zone { border: 2px solid #c7d2fe; border-radius: var(--radius); padding: 20px; background: #EEF2FF; margin-bottom: 20px; }
+.export-zone h3 { font-size: 14px; font-weight: 700; color: #4338CA; margin-bottom: 6px; }
+.export-zone p { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+.btn-export { background: #4F46E5; color: white; }
+.btn-export:hover { background: #4338CA; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(27,36,56,0.4); align-items: center; justify-content: center; z-index: 100; padding: 20px; display: none; }
+.modal-overlay.active { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius); padding: 28px; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg); }
+.modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.day-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+.day-grid-btn { padding: 12px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--surface); font-family: var(--font); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.day-grid-btn:hover { border-color: var(--coral); color: var(--coral); }
+.ical-status { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-top: 12px; }
+.ical-status.success { background: var(--sage-light); color: var(--sage); }
+.ical-status.error { background: #FFF0EC; color: var(--coral); }
+.ical-status.loading { background: var(--amber-light); color: var(--amber); }
+.schedule-type-label { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.schedule-type-label.regular { background: var(--sage-light); color: var(--sage); }
+.schedule-type-label.tuesday { background: #EDF0FF; color: #4A5BA8; }
+.schedule-type-label.friday { background: var(--amber-light); color: #9A7220; }
+@media print { body { background: white; } .gear-btn, .day-nav, .nav-btn, .day-override-btn, .events-section { display: none !important; } .period-card { box-shadow: none; border: 1px solid #ddd; } #landing-page, #setup-chooser { display: none !important; } }
+</style>
+</head>
+<body>
+<div id="landing-page" class="view">
+  <nav class="landing-nav"><div class="nav-logo">Schedule</div></nav>
+  <section class="hero">
+    <div class="hero-eyebrow">Built for ManageBac students</div>
+    <h1>Your schedule,<br><span class="gradient">simplified.</span></h1>
+    <p class="hero-sub">An 8-day rotation planner that knows your blocks, handles Tuesdays and Fridays, and pulls exams from ManageBac.</p>
+    <button class="hero-btn" onclick="showChooser()">Get Started &rarr;</button>
+  </section>
+  <div class="features-row">
+    <div class="feature-pill"><div class="icon">&#8634;</div><h3>8-Day Rotation</h3><p>Auto-tracks which rotation day it is</p></div>
+    <div class="feature-pill"><div class="icon">&#9733;</div><h3>Smart Day Rules</h3><p>Friday &amp; Tuesday schedules built in</p></div>
+    <div class="feature-pill"><div class="icon">&#9776;</div><h3>ManageBac Sync</h3><p>Import exams &amp; tasks from .ics</p></div>
+  </div>
+</div>
+<div id="setup-chooser" class="view">
+  <div class="chooser-wrap">
+    <div class="chooser-main">
+      <h2>Set up your schedule</h2>
+      <p>Configure your 8-day rotation from scratch. You'll pick a reference date, fill in your blocks, and optionally import your ManageBac calendar.</p>
+      <button class="btn btn-primary" onclick="startRegularSetup()">Regular Setup &rarr;</button>
+    </div>
+    <div class="chooser-side">
+      <div class="side-label">Quick Import</div>
+      <h3>Migrating to a new browser?</h3>
+      <p>Upload your backup file to restore everything instantly.</p>
+      <button class="btn-quick" onclick="document.getElementById('import-file').click()">Upload Backup File</button>
+      <input type="file" id="import-file" accept=".json,.txt" onchange="handleImport(this)">
+      <div id="import-status"></div>
+    </div>
+  </div>
+</div>
+<div id="setup-wizard" class="view">
+  <div class="container wide">
+    <div class="setup-header"><h1>Schedule Planner</h1><div class="subtitle">Set up your 8-day rotation</div></div>
+    <div class="progress-bar" id="progress-bar"></div>
+    <div id="setup-steps"></div>
+  </div>
+</div>
+<div id="main-view" class="view">
+  <div class="container">
+    <div class="main-header"><div class="date-display" id="date-display"></div><button class="gear-btn" onclick="showSettings()" title="Settings">&#9881;</button></div>
+    <div id="rotation-info"></div><div id="day-notices"></div>
+    <div class="day-nav"><button class="nav-btn" onclick="navigateDay(-1)">&larr; Prev</button><button class="nav-btn today-btn" onclick="goToday()">Today</button><button class="nav-btn" onclick="navigateDay(1)">Next &rarr;</button></div>
+    <div class="schedule-list" id="schedule-list"></div>
+    <div class="events-section" id="events-section"></div>
+  </div>
+</div>
+<div id="settings-view" class="view">
+  <div class="container wide"><div class="settings-header"><button class="back-btn" onclick="showMain()">&#8592;</button><h1>Settings</h1></div><div id="settings-content"></div></div>
+</div>
+<div class="modal-overlay" id="override-modal">
+  <div class="modal"><h2>What rotation day is today?</h2><div class="day-grid" id="override-grid"></div><button class="btn btn-secondary" style="width:100%" onclick="closeOverrideModal()">Cancel</button></div>
+</div>
+<script>
+const STORAGE_KEY = 'managebac-schedule-v3';
+const DAY_COLORS = ['#E25B3E','#4E8C6F','#5B6ECF','#D4993D','#9B59B6','#E67E22','#1ABC9C','#E74C8E'];
+const BLOCKS = [{id:'b1',name:'Block 1'},{id:'b2',name:'Block 2'},{id:'b3',name:'Block 3'},{id:'b4',name:'Block 4'},{id:'b5',name:'Block 5'}];
+const TIMETABLES = {
+  regular: [
+    {id:'b1',name:'Block 1',start:'08:00',end:'09:05',type:'class'},{id:'b2',name:'Block 2',start:'09:05',end:'10:10',type:'class'},
+    {id:'brk',name:'Break',start:'10:10',end:'10:25',type:'break'},{id:'adv',name:'Advisory',start:'10:30',end:'10:55',type:'advisory'},
+    {id:'b3',name:'Block 3',start:'11:00',end:'11:55',type:'class'},{id:'lunch',name:'Lunch',start:'12:00',end:'12:25',type:'break'},
+    {id:'lbrk',name:'Lunch Break',start:'12:30',end:'12:55',type:'break'},{id:'b4',name:'Block 4',start:'13:00',end:'13:55',type:'class'},
+    {id:'b5',name:'Block 5',start:'14:00',end:'15:00',type:'class'}],
+  tuesday: [
+    {id:'b1',name:'Block 1',start:'08:00',end:'09:05',type:'class'},{id:'b2',name:'Block 2',start:'09:05',end:'10:10',type:'class'},
+    {id:'brk',name:'Break',start:'10:10',end:'10:25',type:'break'},{id:'b3',name:'Block 3',start:'10:25',end:'11:25',type:'class'},
+    {id:'lbrk',name:'Lunch Break',start:'11:30',end:'12:00',type:'break'},{id:'lunch',name:'Lunch',start:'12:00',end:'12:25',type:'break'},
+    {id:'b4',name:'Block 4',start:'12:30',end:'13:25',type:'class'},{id:'b5',name:'Block 5',start:'13:30',end:'14:30',type:'class'}],
+  friday: [
+    {id:'adv',name:'Advisory',start:'08:00',end:'08:40',type:'advisory'},{id:'b1',name:'Block 1',start:'08:40',end:'09:35',type:'class'},
+    {id:'b2',name:'Block 2',start:'09:40',end:'10:40',type:'class'},{id:'brk',name:'Break',start:'10:40',end:'11:00',type:'break'},
+    {id:'b3',name:'Block 3',start:'11:00',end:'11:55',type:'class'},{id:'lunch',name:'Lunch',start:'12:00',end:'12:25',type:'break'},
+    {id:'lbrk',name:'Lunch Break',start:'12:30',end:'12:55',type:'break'},{id:'b4',name:'Block 4',start:'13:00',end:'13:55',type:'class'},
+    {id:'b5',name:'Block 5',start:'14:00',end:'15:00',type:'class'}]
+};
+let state = {};
+let viewingDate = new Date();
+function loadState(){try{const r=localStorage.getItem(STORAGE_KEY);if(r){state=JSON.parse(r);return true;}}catch(e){}return false;}
+function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showChooser(){showView('setup-chooser');}
+function startRegularSetup(){initSetup();showView('setup-wizard');}
+function exportData(){
+  const exportObj={_format:'schedule-planner-backup',_version:1,_exported:new Date().toISOString(),referenceDate:state.referenceDate,referenceDay:state.referenceDay,schedule:state.schedule,icalRaw:state.icalRaw||'',icalEvents:state.icalEvents||[]};
+  const json=JSON.stringify(exportObj,null,2);const dataUri='data:application/json;charset=utf-8,'+encodeURIComponent(json);
+  const a=document.createElement('a');a.href=dataUri;a.download='schedule-backup-'+new Date().toISOString().slice(0,10)+'.json';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>document.body.removeChild(a),100);
+}
+function handleImport(input){
+  const file=input.files[0];if(!file)return;const el=document.getElementById('import-status');const reader=new FileReader();
+  reader.onload=function(e){try{const data=JSON.parse(e.target.result);
+    if(!data._format||data._format!=='schedule-planner-backup'){el.innerHTML='<div class="import-status error">Not a valid backup file.</div>';return;}
+    state={referenceDate:data.referenceDate,referenceDay:data.referenceDay,schedule:data.schedule,icalRaw:data.icalRaw||'',icalEvents:data.icalEvents||[],icalLastFetch:data.icalEvents?.length?new Date().toISOString():null,setupComplete:true};
+    saveState();viewingDate=new Date();renderMain();showView('main-view');}catch(err){el.innerHTML='<div class="import-status error">Could not read file.</div>';}};reader.readAsText(file);
+}
+function toDateStr(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function fromDateStr(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function isWeekday(d){const w=d.getDay();return w!==0&&w!==6;}
+function nextSchoolDay(d){const n=new Date(d);do{n.setDate(n.getDate()+1);}while(!isWeekday(n));return n;}
+function prevSchoolDay(d){const n=new Date(d);do{n.setDate(n.getDate()-1);}while(!isWeekday(n));return n;}
+function countWeekdays(from,to){let count=0;const a=new Date(from);a.setHours(0,0,0,0);const b=new Date(to);b.setHours(0,0,0,0);if(b>a){const c=new Date(a);while(c<b){c.setDate(c.getDate()+1);if(isWeekday(c))count++;}}else if(b<a){const c=new Date(b);while(c<a){c.setDate(c.getDate()+1);if(isWeekday(c))count++;}count=-count;}return count;}
+function getRotationDay(date){const ref=fromDateStr(state.referenceDate);return((state.referenceDay-1+countWeekdays(ref,date))%8+8)%8+1;}
+function getDayType(date){const dow=date.getDay();if(dow===2)return'tuesday';if(dow===5)return'friday';return'regular';}
+function formatTime12(t){if(!t)return'';const[h,m]=t.split(':').map(Number);return`${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;}
+function timeToMin(t){if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m;}
+function getScheduleForDate(date){const timetable=JSON.parse(JSON.stringify(TIMETABLES[getDayType(date)]));const classes=state.schedule?.[getRotationDay(date)]||{};return timetable.map(p=>({...p,className:classes[p.id]?.class||'',room:classes[p.id]?.room||''}));}
+function getCurrentPeriodIndex(schedule){const now=new Date(),nowMin=now.getHours()*60+now.getMinutes();for(let i=0;i<schedule.length;i++){if(nowMin>=timeToMin(schedule[i].start)&&nowMin<timeToMin(schedule[i].end))return i;}return-1;}
+function getPeriodProgress(p){const now=new Date(),nowMin=now.getHours()*60+now.getMinutes(),s=timeToMin(p.start),e=timeToMin(p.end);return e===s?0:Math.max(0,Math.min(100,((nowMin-s)/(e-s))*100));}
+function parseICS(text){if(!text)return[];text=text.replace(/\r\n[\t ]/g,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');const events=[],blocks=text.split('BEGIN:VEVENT');for(let i=1;i<blocks.length;i++){const block=blocks[i].split('END:VEVENT')[0];const ev={};for(const line of block.split('\n')){const ci=line.indexOf(':');if(ci<0)continue;const key=line.substring(0,ci).split(';')[0].trim(),val=line.substring(ci+1).trim();if(key==='SUMMARY')ev.summary=val.replace(/\\,/g,',').replace(/\\n/g,' ');else if(key==='DTSTART')ev.start=parseICSDate(val);else if(key==='DTEND')ev.end=parseICSDate(val);}if(ev.summary&&ev.start)events.push(ev);}return events.sort((a,b)=>a.start-b.start);}
+function parseICSDate(s){s=s.trim();if(s.length===8&&/^\d{8}$/.test(s))return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));if(s.includes('T')){const d=s.replace('Z','');return new Date(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8),+d.slice(9,11),+(d.slice(11,13)||0),+(d.slice(13,15)||0));}return new Date(s);}
+function getUpcomingEvents(limit=8){const events=state.icalEvents||[],now=new Date();now.setHours(0,0,0,0);return events.filter(e=>e.start>=now).slice(0,limit);}
+let setupStep=1;
+let setupData={referenceDate:toDateStr(new Date()),referenceDay:1,schedule:{},icalRaw:'',icalEvents:[]};
+function initSetup(){for(let d=1;d<=8;d++){if(!setupData.schedule[d])setupData.schedule[d]={};BLOCKS.forEach(b=>{if(!setupData.schedule[d][b.id])setupData.schedule[d][b.id]={class:'',room:''};});}setupStep=1;renderSetup();}
+function renderSetup(){
+  document.getElementById('progress-bar').innerHTML=[1,2,3].map(i=>`<div class="progress-dot ${i<=setupStep?'filled':''}"></div>`).join('');
+  const c=document.getElementById('setup-steps');
+  if(setupStep===1){c.innerHTML=`<div class="step-title">Rotation Reference</div><div class="step-desc">Pick any date you know the rotation day for. The app calculates all other days from this anchor.</div><div class="inline-fields"><div class="form-group"><label>Date</label><input type="date" id="ref-date" value="${setupData.referenceDate}"></div><div class="form-group narrow"><label>Rotation Day</label><select id="ref-day">${[1,2,3,4,5,6,7,8].map(d=>`<option value="${d}" ${d===setupData.referenceDay?'selected':''}>Day ${d}</option>`).join('')}</select></div></div><div class="btn-row"><div></div><button class="btn btn-primary" onclick="nextSetupStep()">Next &rarr;</button></div>`;}
+  else if(setupStep===2){c.innerHTML=`<div class="step-title">Your 8-Day Rotation</div><div class="step-desc">Enter the class you have in each block for all 8 rotation days.</div><div class="grid-wrapper"><div class="schedule-grid" id="setup-grid"><div></div>${[1,2,3,4,5,6,7,8].map(d=>`<div class="grid-header" style="background:${DAY_COLORS[d-1]}">Day ${d}</div>`).join('')}${BLOCKS.map(b=>`<div class="grid-row-label">${b.name}</div>${[1,2,3,4,5,6,7,8].map(d=>`<div class="grid-cell"><input type="text" placeholder="Class" value="${setupData.schedule[d]?.[b.id]?.class||''}" data-day="${d}" data-block="${b.id}" data-field="class"><input type="text" class="room-input" placeholder="Rm" value="${setupData.schedule[d]?.[b.id]?.room||''}" data-day="${d}" data-block="${b.id}" data-field="room"></div>`).join('')}`).join('')}</div></div><div class="grid-hint">Scroll right to see all 8 days &middot; Advisory is handled automatically</div><div class="btn-row"><button class="btn btn-secondary" onclick="prevSetupStep()">&larr; Back</button><button class="btn btn-primary" onclick="nextSetupStep()">Next &rarr;</button></div>`;}
+  else if(setupStep===3){c.innerHTML=`<div class="step-title">Connect ManageBac Calendar</div><div class="step-desc">Upload your .ics file from ManageBac to pull in exams, deadlines, and tasks.</div><div class="form-group"><label>Upload .ics file</label><input type="file" id="ical-file" accept=".ics,.ical,text/calendar" onchange="handleICalFile(this,'setup')" style="padding:10px"></div><div id="ical-status"></div><div class="btn-row"><button class="btn btn-secondary" onclick="prevSetupStep()">&larr; Back</button><button class="btn btn-primary" onclick="finishSetup()">Done &rarr;</button></div>`;}
+}
+function collectGridData(){document.querySelectorAll('#setup-grid input[data-day]').forEach(inp=>{const d=+inp.dataset.day,b=inp.dataset.block,f=inp.dataset.field;if(!setupData.schedule[d])setupData.schedule[d]={};if(!setupData.schedule[d][b])setupData.schedule[d][b]={class:'',room:''};setupData.schedule[d][b][f]=inp.value;});}
+function nextSetupStep(){if(setupStep===1){setupData.referenceDate=document.getElementById('ref-date').value;setupData.referenceDay=+document.getElementById('ref-day').value;}else if(setupStep===2){collectGridData();}setupStep=Math.min(setupStep+1,3);renderSetup();window.scrollTo(0,0);}
+function prevSetupStep(){if(setupStep===2)collectGridData();setupStep=Math.max(setupStep-1,1);renderSetup();window.scrollTo(0,0);}
+function handleICalFile(input,context){const file=input.files[0];if(!file)return;const el=document.getElementById(context==='setup'?'ical-status':'s-ical-status');el.innerHTML='<div class="ical-status loading">Reading file...</div>';const reader=new FileReader();reader.onload=function(e){const text=e.target.result;if(!text.includes('BEGIN:VCALENDAR')){el.innerHTML='<div class="ical-status error">Not a valid .ics file.</div>';return;}const events=parseICS(text);if(context==='setup'){setupData.icalRaw=text;setupData.icalEvents=events;}else{state.icalRaw=text;state.icalEvents=events;state.icalLastFetch=new Date().toISOString();saveState();}el.innerHTML=`<div class="ical-status success">Loaded ${events.length} events from ${file.name}</div>`;};reader.onerror=function(){el.innerHTML='<div class="ical-status error">Could not read file.</div>';};reader.readAsText(file);}
+function finishSetup(){state={referenceDate:setupData.referenceDate,referenceDay:setupData.referenceDay,schedule:setupData.schedule,icalRaw:setupData.icalRaw||'',icalEvents:setupData.icalEvents||[],icalLastFetch:setupData.icalEvents?.length?new Date().toISOString():null,setupComplete:true};saveState();viewingDate=new Date();renderMain();showView('main-view');}
+function renderMain(){
+  const d=viewingDate,today=new Date();today.setHours(0,0,0,0);const viewing=new Date(d);viewing.setHours(0,0,0,0);const isToday=viewing.getTime()===today.getTime();
+  document.getElementById('date-display').innerHTML=`<div class="weekday">${isToday?'Today':d.toLocaleDateString('en-US',{weekday:'long'})}</div><h1>${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</h1>`;
+  const rotInfo=document.getElementById('rotation-info');
+  if(!isWeekday(d)){const nd=nextSchoolDay(d),rd=getRotationDay(nd);rotInfo.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text-secondary)">Weekend &mdash; next school day is <strong>Day ${rd}</strong> (${nd.toLocaleDateString('en-US',{weekday:'long'})})</div>`;document.getElementById('schedule-list').innerHTML='';document.getElementById('day-notices').innerHTML='';renderEvents();return;}
+  const rotDay=getRotationDay(d),dayType=getDayType(d),typeLabel=dayType==='tuesday'?'Tuesday':dayType==='friday'?'Friday':'Regular';
+  rotInfo.innerHTML=`<div class="rotation-badge" style="background:${DAY_COLORS[rotDay-1]}">Day ${rotDay}</div><span class="schedule-type-label ${dayType}">${typeLabel} Schedule</span>${isToday?`<button class="day-override-btn" onclick="openOverrideModal()">Not right? Fix it</button>`:''}`;
+  const notices=document.getElementById('day-notices');let nh='';
+  if(dayType==='friday')nh+='<div class="day-notice friday">&#9733; Friday &mdash; Advisory at 8:00 AM (first period)</div>';
+  if(dayType==='tuesday')nh+='<div class="day-notice tuesday">&#9679; Tuesday &mdash; No advisory, school ends at 2:30 PM</div>';
+  notices.innerHTML=nh;
+  const schedule=getScheduleForDate(d),currentIdx=isToday?getCurrentPeriodIndex(schedule):-1;
+  document.getElementById('schedule-list').innerHTML=schedule.map((p,i)=>{
+    const isCurrent=i===currentIdx,isBreak=p.type==='break',isAdv=p.type==='advisory';
+    let cls='period-card';if(isCurrent)cls+=' current';if(isBreak)cls+=' break-card';if(isAdv)cls+=' advisory-card';
+    let content='';
+    if(isBreak){content=`<div class="period-info"><div class="period-name" style="font-size:13px;color:var(--text-secondary)">${p.name}</div></div>`;}
+    else if(isAdv){content=`<div class="period-info"><div class="period-name">${p.name}</div>${isCurrent?`<div class="progress-track"><div class="progress-fill" style="width:${getPeriodProgress(p)}%"></div></div>`:''}</div>${isCurrent?'<div class="now-badge">NOW</div>':''}`;}
+    else{content=`<div class="period-info"><div class="period-name">${p.className||p.name}</div>${p.className?`<div class="period-class">${p.name}</div>`:''}${p.room?`<div class="period-room">Room ${p.room}</div>`:''}${isCurrent?`<div class="progress-track"><div class="progress-fill" style="width:${getPeriodProgress(p)}%"></div></div>`:''}</div>${isCurrent?'<div class="now-badge">NOW</div>':''}`;}
+    return`<div class="${cls}"><div class="period-time">${formatTime12(p.start)}</div>${content}</div>`;
+  }).join('')+(dayType==='tuesday'?'<div class="end-notice">School ends at 2:30 PM</div>':'');
+  renderEvents();
+}
+function renderEvents(){
+  const section=document.getElementById('events-section'),events=getUpcomingEvents(8);
+  if(!events.length&&!state.icalRaw){section.innerHTML='';return;}
+  let h=`<div class="section-title">Upcoming<span class="line"></span></div>`;
+  if(!events.length){h+='<div class="no-events">No upcoming events. Upload an .ics file in Settings.</div>';}
+  else{h+=events.map(ev=>{const d=ev.start;return`<div class="event-card"><div class="event-date-badge"><div class="month">${d.toLocaleDateString('en-US',{month:'short'})}</div><div class="day">${d.getDate()}</div></div><div class="event-info"><div class="event-name">${escapeHTML(ev.summary)}</div><div class="event-time">${d.getHours()===0&&d.getMinutes()===0?'All day':d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div></div></div>`;}).join('');}
+  section.innerHTML=h;
+}
+function escapeHTML(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function navigateDay(dir){viewingDate=dir>0?nextSchoolDay(viewingDate):prevSchoolDay(viewingDate);renderMain();}
+function goToday(){viewingDate=new Date();renderMain();}
+function openOverrideModal(){document.getElementById('override-modal').classList.add('active');document.getElementById('override-grid').innerHTML=[1,2,3,4,5,6,7,8].map(d=>`<button class="day-grid-btn" style="border-color:${DAY_COLORS[d-1]};color:${DAY_COLORS[d-1]}" onclick="overrideDay(${d})">Day ${d}</button>`).join('');}
+function closeOverrideModal(){document.getElementById('override-modal').classList.remove('active');}
+function overrideDay(d){state.referenceDate=toDateStr(viewingDate);state.referenceDay=d;saveState();closeOverrideModal();renderMain();}
+function showSettings(){showView('settings-view');renderSettings();}
+function showMain(){showView('main-view');renderMain();}
+function renderSettings(){
+  document.getElementById('settings-content').innerHTML=`
+    <div class="settings-section"><h2>Rotation Reference</h2><div class="inline-fields"><div class="form-group"><label>Date</label><input type="date" id="s-ref-date" value="${state.referenceDate}"></div><div class="form-group narrow"><label>Day</label><select id="s-ref-day">${[1,2,3,4,5,6,7,8].map(d=>`<option value="${d}" ${d===state.referenceDay?'selected':''}>Day ${d}</option>`).join('')}</select></div></div></div>
+    <div class="settings-section"><h2>Class Schedule</h2><div class="grid-wrapper"><div class="schedule-grid" id="settings-grid"><div></div>${[1,2,3,4,5,6,7,8].map(d=>`<div class="grid-header" style="background:${DAY_COLORS[d-1]}">Day ${d}</div>`).join('')}${BLOCKS.map(b=>`<div class="grid-row-label">${b.name}</div>${[1,2,3,4,5,6,7,8].map(d=>`<div class="grid-cell"><input type="text" placeholder="Class" value="${state.schedule[d]?.[b.id]?.class||''}" data-day="${d}" data-block="${b.id}" data-field="class"><input type="text" class="room-input" placeholder="Rm" value="${state.schedule[d]?.[b.id]?.room||''}" data-day="${d}" data-block="${b.id}" data-field="room"></div>`).join('')}`).join('')}</div></div></div>
+    <div class="settings-section"><h2>ManageBac Calendar</h2><div class="form-group"><label>Upload .ics file</label><input type="file" id="s-ical-file" accept=".ics,.ical,text/calendar" onchange="handleICalFile(this,'settings')" style="padding:10px"></div><div id="s-ical-status">${state.icalLastFetch?`<div class="ical-status success">Last loaded: ${new Date(state.icalLastFetch).toLocaleString()} &middot; ${(state.icalEvents||[]).length} events</div>`:''}</div></div>
+    <div style="display:flex;gap:10px;margin-bottom:28px"><button class="btn btn-primary" style="flex:1" onclick="saveSettings()">Save Changes</button><button class="btn btn-secondary" onclick="showMain()">Cancel</button></div>
+    <div class="export-zone"><h3>Export Backup</h3><p>Download your schedule data to transfer to another browser or device.</p><button class="btn btn-export btn-small" onclick="exportData()">Download Backup File</button></div>
+    <div class="danger-zone" style="margin-top:16px"><h3>Reset Everything</h3><p>Clear all data and return to setup.</p><button class="btn btn-danger btn-small" onclick="resetAll()">Reset</button></div>`;
+}
+function collectSettingsGrid(){document.querySelectorAll('#settings-grid input[data-day]').forEach(inp=>{const d=+inp.dataset.day,b=inp.dataset.block,f=inp.dataset.field;if(!state.schedule[d])state.schedule[d]={};if(!state.schedule[d][b])state.schedule[d][b]={class:'',room:''};state.schedule[d][b][f]=inp.value;});}
+function saveSettings(){state.referenceDate=document.getElementById('s-ref-date').value;state.referenceDay=+document.getElementById('s-ref-day').value;collectSettingsGrid();saveState();showMain();}
+function resetAll(){if(confirm('This will erase all your schedule data. Are you sure?')){localStorage.removeItem(STORAGE_KEY);state={};setupStep=1;setupData={referenceDate:toDateStr(new Date()),referenceDay:1,schedule:{},icalRaw:'',icalEvents:[]};showView('landing-page');}}
+function init(){if(loadState()&&state.setupComplete){viewingDate=new Date();renderMain();showView('main-view');setInterval(()=>{const t=new Date();t.setHours(0,0,0,0);const v=new Date(viewingDate);v.setHours(0,0,0,0);if(v.getTime()===t.getTime())renderMain();},60000);}else{showView('landing-page');}}
+init();
+</script>
+</body>
+</html>
