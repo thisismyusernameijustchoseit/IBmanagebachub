@@ -97,6 +97,14 @@ input:focus { border-color: var(--blue); }
       <h3>All Schools</h3>
       <div id="super-schools"></div>
     </div>
+    <div class="card">
+      <h3>All Bug Reports</h3>
+      <div id="super-reports"></div>
+    </div>
+    <div class="card">
+      <h3>Banned IPs</h3>
+      <div id="super-bans"></div>
+    </div>
   </div>
 
   <div id="dashboard-section" class="section">
@@ -127,9 +135,14 @@ input:focus { border-color: var(--blue); }
     </div>
     <div class="card">
       <h3>Student Accounts</h3>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Message, reset passwords, rename, or remove student accounts.</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Message, reset passwords, rename, remove, or ban student accounts.</p>
       <div id="user-list"></div>
       <div id="user-msg"></div>
+    </div>
+    <div class="card">
+      <h3>Bug Reports</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Issues reported by students. Resolve to clear them.</p>
+      <div id="reports-list"></div>
     </div>
     <div class="card">
       <h3>Student Link</h3>
@@ -148,6 +161,7 @@ function adminAuth(){ return actingSuper ? { superPassword } : { adminPassword: 
 async function api(path, method='GET', body=null){const opts={method,headers:{'Content-Type':'application/json'}};if(body)opts.body=JSON.stringify(body);const r=await fetch(API_BASE+path,opts);let data={};try{data=await r.json();}catch(e){}return {status:r.status,data};}
 function showMsg(id,t,type){document.getElementById(id).innerHTML=`<div class="msg ${type}">${t}</div>`;}
 function showSection(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function escapeHtml(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 async function adminLogin(){
   const code=document.getElementById('login-code').value.trim().toUpperCase();
@@ -167,6 +181,7 @@ function renderDashboard(){
   document.getElementById('dash-ref-day').value=currentSchool.referenceDay||1;
   renderHolidays();
   loadUsers();
+  loadReports();
   document.getElementById('student-link').textContent=`${STUDENT_URL} → Code: ${currentSchool.code}`;
 }
 async function updateRotation(){
@@ -198,7 +213,13 @@ async function loadUsers(){
 function renderUserList(){
   const list=document.getElementById('user-list');
   if(!loadedUsers.length){list.innerHTML='<span style="font-size:13px;color:var(--text2)">No student accounts yet.</span>';return;}
-  list.innerHTML=`<div style="margin-bottom:12px"><button class="btn btn-blue" style="font-size:13px;padding:8px 14px" onclick="messageAll()">Message All Students</button></div>`+loadedUsers.map(u=>`<div class="user-row"><div class="uinfo"><strong>${u.username}</strong><span>${u.hasSchedule?'Schedule set':'No schedule yet'} · joined ${new Date(u.createdAt).toLocaleDateString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="messageUser('${u.username}')">Message</button><button class="btn btn-outline" onclick="resetUser('${u.username}')">Reset PW</button><button class="btn btn-outline" onclick="renameUser('${u.username}')">Rename</button><button class="btn btn-red" onclick="deleteUser('${u.username}')">Delete</button></div></div>`).join('');
+  list.innerHTML=`<div style="margin-bottom:12px"><button class="btn btn-blue" style="font-size:13px;padding:8px 14px" onclick="messageAll()">Message All Students</button></div>`+loadedUsers.map(u=>`<div class="user-row"><div class="uinfo"><strong>${u.username}</strong><span>${u.hasSchedule?'Schedule set':'No schedule yet'} · joined ${new Date(u.createdAt).toLocaleDateString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="messageUser('${u.username}')">Message</button><button class="btn btn-outline" onclick="resetUser('${u.username}')">Reset PW</button><button class="btn btn-outline" onclick="renameUser('${u.username}')">Rename</button><button class="btn btn-red" onclick="deleteUser('${u.username}')">Delete</button><button class="btn btn-red" onclick="banUser('${u.username}')">Ban</button></div></div>`).join('');
+}
+async function banUser(username){
+  const reason=prompt(`Ban "${username}"? This deletes their account and blocks their IP from making new accounts.\n\nReason (shown to them if they try to sign up again):`);
+  if(reason===null)return;
+  const r=await api(`/api/school/${currentSchool.code}/admin/ban`,'POST',{...adminAuth(),username,reason});
+  if(r.data.success){loadedUsers=loadedUsers.filter(x=>x.username!==username);renderUserList();showMsg('user-msg',r.data.banned?`Banned ${username} (IP ${r.data.ip}).`:`Deleted ${username} (no IP on record to ban).`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
 }
 async function messageUser(username){
   const text=prompt(`Message to send to "${username}":`);
@@ -230,6 +251,18 @@ async function deleteUser(username){
   if(r.data.success){loadedUsers=loadedUsers.filter(x=>x.username!==username);renderUserList();showMsg('user-msg',`Deleted ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
 }
 
+async function loadReports(){
+  const r=await api(`/api/school/${currentSchool.code}/admin/reports`,'POST',adminAuth());
+  const el=document.getElementById('reports-list');
+  const reports=r.data.reports||[];
+  if(!reports.length){el.innerHTML='<span style="font-size:13px;color:var(--text2)">No bug reports.</span>';return;}
+  el.innerHTML=reports.map(rep=>`<div class="user-row"><div class="uinfo"><strong>${rep.username}</strong><span>${escapeHtml(rep.text)}</span><span style="margin-top:4px">${new Date(rep.date).toLocaleString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="resolveReport('${rep.id}')">Resolve</button></div></div>`).join('');
+}
+async function resolveReport(id){
+  const r=await api(`/api/school/${currentSchool.code}/admin/resolve-report`,'POST',{...adminAuth(),id});
+  if(r.data.success)loadReports();
+}
+
 function showSuperLogin(){showSection('super-login-section');}
 function backToAuth(){showSection('auth-section');}
 function superLogout(){superPassword='';showSection('auth-section');}
@@ -238,7 +271,29 @@ async function superLogin(){
   if(!pw){showMsg('super-msg','Enter the super password.','err');return;}
   const r=await api('/api/super/schools','POST',{superPassword:pw});
   if(r.status!==200){showMsg('super-msg','Wrong super password.','err');return;}
-  superPassword=pw;renderSuper(r.data.schools);
+  superPassword=pw;renderSuper(r.data.schools);loadSuperReports();loadBans();
+}
+async function loadSuperReports(){
+  const r=await api('/api/super/reports','POST',{superPassword});
+  const el=document.getElementById('super-reports');
+  const reports=r.data.reports||[];
+  if(!reports.length){el.innerHTML='<span style="font-size:13px;color:var(--text2)">No bug reports.</span>';return;}
+  el.innerHTML=reports.map(rep=>`<div class="user-row"><div class="uinfo"><strong>${rep.code} · ${rep.username}</strong><span>${escapeHtml(rep.text)}</span><span style="margin-top:4px">${new Date(rep.date).toLocaleString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="superResolveReport('${rep.code}','${rep.id}')">Resolve</button></div></div>`).join('');
+}
+async function superResolveReport(code,id){
+  const r=await api(`/api/school/${code}/admin/resolve-report`,'POST',{superPassword,id});
+  if(r.data.success)loadSuperReports();
+}
+async function loadBans(){
+  const r=await api('/api/super/bans','POST',{superPassword});
+  const el=document.getElementById('super-bans');
+  const bans=r.data.bans||[];
+  if(!bans.length){el.innerHTML='<span style="font-size:13px;color:var(--text2)">No banned IPs.</span>';return;}
+  el.innerHTML=bans.map(b=>`<div class="user-row"><div class="uinfo"><strong>${b.ip}</strong><span>${escapeHtml(b.reason)} · was ${b.username} (${b.code})</span><span style="margin-top:4px">${new Date(b.date).toLocaleString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="unban('${b.ip}')">Unban</button></div></div>`).join('');
+}
+async function unban(ip){
+  const r=await api('/api/super/unban','POST',{superPassword,ip});
+  if(r.data.success)loadBans();
 }
 function renderSuper(schools){
   showSection('super-section');
