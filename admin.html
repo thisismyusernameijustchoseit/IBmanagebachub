@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<style>
+:root { --bg: #f8fafc; --surface: #fff; --text: #1e293b; --text2: #64748b; --blue: #4F46E5; --blue-light: #EEF2FF; --red: #dc2626; --green: #16a34a; --border: #e2e8f0; --radius: 12px; --font: -apple-system, 'Segoe UI', system-ui, sans-serif; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+.container { max-width: 640px; margin: 0 auto; padding: 32px 20px 80px; }
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+.subtitle { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+.card { background: var(--surface); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; border: 1px solid var(--border); }
+.card h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+label { display: block; font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+input, select { width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; font-family: var(--font); outline: none; margin-bottom: 14px; }
+input:focus { border-color: var(--blue); }
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: var(--font); border: none; cursor: pointer; transition: all 0.2s; }
+.btn-blue { background: var(--blue); color: white; }
+.btn-blue:hover { background: #4338CA; }
+.btn-red { background: var(--red); color: white; font-size: 13px; padding: 6px 12px; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text2); }
+.row { display: flex; gap: 10px; align-items: end; }
+.row > * { flex: 1; }
+.row .narrow { flex: 0 0 100px; }
+.msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
+.msg.ok { background: #f0fdf4; color: var(--green); }
+.msg.err { background: #fef2f2; color: var(--red); }
+.msg.info { background: var(--blue-light); color: var(--blue); }
+.holiday-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.holiday-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--blue-light); color: var(--blue); border-radius: 20px; font-size: 13px; font-weight: 600; }
+.holiday-tag button { background: none; border: none; color: var(--blue); cursor: pointer; font-size: 16px; line-height: 1; }
+.section { display: none; }
+.section.active { display: block; }
+.school-badge { display: inline-block; padding: 4px 12px; background: var(--blue); color: white; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+.back-link { color: var(--text2); font-size: 13px; cursor: pointer; margin-bottom: 20px; display: inline-block; }
+.back-link:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Admin Dashboard</h1>
+  <p class="subtitle">Manage your school's schedule</p>
+  <div id="auth-section" class="section active">
+    <div class="card">
+      <h3>Log into your school</h3>
+      <label>School Code</label>
+      <input type="text" id="login-code" placeholder="e.g. NJIS" style="text-transform:uppercase">
+      <label>Admin Password</label>
+      <input type="password" id="login-pass" placeholder="Your admin password">
+      <button class="btn btn-blue" onclick="adminLogin()">Log In</button>
+      <div id="login-msg"></div>
+    </div>
+    <div class="card">
+      <h3>Register a new school</h3>
+      <label>School Code (short, e.g. NJIS)</label>
+      <input type="text" id="reg-code" placeholder="NJIS" style="text-transform:uppercase">
+      <label>School Name</label>
+      <input type="text" id="reg-name" placeholder="Nanjing International School">
+      <label>Admin Password</label>
+      <input type="password" id="reg-pass" placeholder="Choose a password">
+      <button class="btn btn-blue" onclick="createSchool()">Create School</button>
+      <div id="reg-msg"></div>
+    </div>
+  </div>
+  <div id="dashboard-section" class="section">
+    <span class="back-link" onclick="logout()">&larr; Log out</span>
+    <div id="school-badge"></div>
+    <div class="card">
+      <h3>Rotation Reference</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Set the anchor date so the app knows which rotation day it is.</p>
+      <div class="row">
+        <div><label>Date</label><input type="date" id="dash-ref-date"></div>
+        <div class="narrow"><label>Day</label>
+          <select id="dash-ref-day"><option value="1">Day 1</option><option value="2">Day 2</option><option value="3">Day 3</option><option value="4">Day 4</option><option value="5">Day 5</option><option value="6">Day 6</option><option value="7">Day 7</option><option value="8">Day 8</option></select>
+        </div>
+      </div>
+      <button class="btn btn-blue" onclick="updateRotation()">Save Rotation</button>
+      <div id="rotation-msg"></div>
+    </div>
+    <div class="card">
+      <h3>Holidays / No-School Days</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Holidays are skipped in the rotation count. Students' rotation days auto-adjust.</p>
+      <div class="row">
+        <div><label>Add Holiday</label><input type="date" id="holiday-date"></div>
+        <div class="narrow" style="padding-bottom:14px"><button class="btn btn-blue" onclick="addHoliday()" style="width:100%">Add</button></div>
+      </div>
+      <div class="holiday-list" id="holiday-list"></div>
+      <div id="holiday-msg"></div>
+    </div>
+    <div class="card">
+      <h3>Student Link</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Share this with students. They enter your school code on setup:</p>
+      <div id="student-link" style="font-size:14px;font-weight:600;word-break:break-all;padding:10px;background:var(--blue-light);border-radius:8px;color:var(--blue)"></div>
+    </div>
+  </div>
+</div>
+<script>
+const API_BASE = 'https://schedule-api.managebac.workers.dev';
+let currentSchool = null;
+let currentPassword = '';
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API_BASE + path, opts);
+  return { status: r.status, data: await r.json() };
+}
+function showMsg(id, text, type) { document.getElementById(id).innerHTML = `<div class="msg ${type}">${text}</div>`; }
+async function createSchool() {
+  const code = document.getElementById('reg-code').value.trim().toUpperCase();
+  const name = document.getElementById('reg-name').value.trim();
+  const pw = document.getElementById('reg-pass').value;
+  if (!code || !name || !pw) { showMsg('reg-msg', 'Fill in all fields.', 'err'); return; }
+  const r = await api('/api/school/create', 'POST', { code, name, adminPassword: pw });
+  if (r.data.success) {
+    showMsg('reg-msg', `School "${code}" created! Logging in...`, 'ok');
+    document.getElementById('login-code').value = code;
+    document.getElementById('login-pass').value = pw;
+    setTimeout(() => adminLogin(), 500);
+  } else { showMsg('reg-msg', r.data.error || 'Failed.', 'err'); }
+}
+async function adminLogin() {
+  const code = document.getElementById('login-code').value.trim().toUpperCase();
+  const pw = document.getElementById('login-pass').value;
+  if (!code || !pw) { showMsg('login-msg', 'Enter code and password.', 'err'); return; }
+  const r = await api(`/api/school/${code}`);
+  if (r.status !== 200) { showMsg('login-msg', 'School not found.', 'err'); return; }
+  const verify = await api(`/api/school/${code}`, 'PUT', { adminPassword: pw, referenceDate: r.data.referenceDate, referenceDay: r.data.referenceDay });
+  if (verify.status === 403) { showMsg('login-msg', 'Wrong password.', 'err'); return; }
+  currentSchool = verify.data.school || r.data;
+  currentPassword = pw;
+  renderDashboard();
+}
+function logout() {
+  currentSchool = null; currentPassword = '';
+  document.getElementById('auth-section').classList.add('active');
+  document.getElementById('dashboard-section').classList.remove('active');
+}
+function renderDashboard() {
+  document.getElementById('auth-section').classList.remove('active');
+  document.getElementById('dashboard-section').classList.add('active');
+  document.getElementById('school-badge').innerHTML = `<div class="school-badge">${currentSchool.code}</div><h2>${currentSchool.name}</h2>`;
+  document.getElementById('dash-ref-date').value = currentSchool.referenceDate || '';
+  document.getElementById('dash-ref-day').value = currentSchool.referenceDay || 1;
+  renderHolidays();
+  document.getElementById('student-link').textContent = `https://thisismyusernameijustchoseit.github.io/IBmanagebachub/ → Code: ${currentSchool.code}`;
+}
+async function updateRotation() {
+  const date = document.getElementById('dash-ref-date').value;
+  const day = +document.getElementById('dash-ref-day').value;
+  const r = await api(`/api/school/${currentSchool.code}`, 'PUT', { adminPassword: currentPassword, referenceDate: date, referenceDay: day });
+  if (r.data.success) { currentSchool = r.data.school; showMsg('rotation-msg', 'Rotation updated!', 'ok'); }
+  else { showMsg('rotation-msg', r.data.error || 'Failed.', 'err'); }
+}
+function renderHolidays() {
+  const list = document.getElementById('holiday-list');
+  const holidays = currentSchool.holidays || [];
+  if (!holidays.length) { list.innerHTML = '<span style="font-size:13px;color:var(--text2)">No holidays set.</span>'; return; }
+  list.innerHTML = holidays.sort().map(h => `<div class="holiday-tag">${h}<button onclick="removeHoliday('${h}')">&times;</button></div>`).join('');
+}
+async function addHoliday() {
+  const date = document.getElementById('holiday-date').value;
+  if (!date) return;
+  const holidays = [...(currentSchool.holidays || [])];
+  if (!holidays.includes(date)) holidays.push(date);
+  const r = await api(`/api/school/${currentSchool.code}/holidays`, 'PUT', { adminPassword: currentPassword, holidays });
+  if (r.data.success) { currentSchool.holidays = r.data.holidays; renderHolidays(); document.getElementById('holiday-date').value = ''; showMsg('holiday-msg', 'Holiday added!', 'ok'); }
+  else { showMsg('holiday-msg', r.data.error || 'Failed.', 'err'); }
+}
+async function removeHoliday(date) {
+  const holidays = (currentSchool.holidays || []).filter(h => h !== date);
+  const r = await api(`/api/school/${currentSchool.code}/holidays`, 'PUT', { adminPassword: currentPassword, holidays });
+  if (r.data.success) { currentSchool.holidays = r.data.holidays; renderHolidays(); }
+}
+</script>
+</body>
+</html>
