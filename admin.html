@@ -142,7 +142,7 @@ input:focus { border-color: var(--blue); }
 <script>
 const API_BASE = 'https://schedule-api.managebac.workers.dev';
 const STUDENT_URL = 'https://thisismyusernameijustchoseit.github.io/IBmanagebachub/';
-let currentSchool = null, currentPassword = '', superPassword = '';
+let currentSchool = null, currentPassword = '', superPassword = '', loadedUsers = [];
 
 async function api(path, method='GET', body=null){const opts={method,headers:{'Content-Type':'application/json'}};if(body)opts.body=JSON.stringify(body);const r=await fetch(API_BASE+path,opts);let data={};try{data=await r.json();}catch(e){}return {status:r.status,data};}
 function showMsg(id,t,type){document.getElementById(id).innerHTML=`<div class="msg ${type}">${t}</div>`;}
@@ -191,13 +191,31 @@ async function removeHoliday(date){const holidays=(currentSchool.holidays||[]).f
 
 async function loadUsers(){
   const r=await api(`/api/school/${currentSchool.code}/admin/users`,'POST',{adminPassword:currentPassword});
-  const list=document.getElementById('user-list');
-  if(!r.data.users||!r.data.users.length){list.innerHTML='<span style="font-size:13px;color:var(--text2)">No student accounts yet.</span>';return;}
-  list.innerHTML=r.data.users.map(u=>`<div class="user-row"><div class="uinfo"><strong>${u.username}</strong><span>${u.hasSchedule?'Schedule set':'No schedule yet'} · joined ${new Date(u.createdAt).toLocaleDateString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="resetUser('${u.username}')">Reset PW</button><button class="btn btn-outline" onclick="renameUser('${u.username}')">Rename</button><button class="btn btn-red" onclick="deleteUser('${u.username}')">Delete</button></div></div>`).join('');
+  loadedUsers=r.data.users||[];
+  renderUserList();
 }
-async function resetUser(username){const newPw=prompt(`New password for "${username}":`);if(!newPw)return;const r=await api(`/api/school/${currentSchool.code}/admin/reset`,'POST',{adminPassword:currentPassword,username,newPassword:newPw});if(r.data.success){showMsg('user-msg',`Password reset for ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}}
-async function renameUser(username){const newName=prompt(`New username for "${username}":`);if(!newName)return;const r=await api(`/api/school/${currentSchool.code}/admin/rename`,'POST',{adminPassword:currentPassword,username,newUsername:newName});if(r.data.success){showMsg('user-msg',`Renamed to ${newName}.`,'ok');loadUsers();}else{showMsg('user-msg',r.data.error||'Failed.','err');}}
-async function deleteUser(username){if(!confirm(`Delete account "${username}"? This removes their schedule too.`))return;const r=await api(`/api/school/${currentSchool.code}/admin/delete-user`,'POST',{adminPassword:currentPassword,username});if(r.data.success){showMsg('user-msg',`Deleted ${username}.`,'ok');loadUsers();}else{showMsg('user-msg',r.data.error||'Failed.','err');}}
+function renderUserList(){
+  const list=document.getElementById('user-list');
+  if(!loadedUsers.length){list.innerHTML='<span style="font-size:13px;color:var(--text2)">No student accounts yet.</span>';return;}
+  list.innerHTML=loadedUsers.map(u=>`<div class="user-row"><div class="uinfo"><strong>${u.username}</strong><span>${u.hasSchedule?'Schedule set':'No schedule yet'} · joined ${new Date(u.createdAt).toLocaleDateString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="resetUser('${u.username}')">Reset PW</button><button class="btn btn-outline" onclick="renameUser('${u.username}')">Rename</button><button class="btn btn-red" onclick="deleteUser('${u.username}')">Delete</button></div></div>`).join('');
+}
+async function resetUser(username){
+  const newPw=prompt(`New password for "${username}":`);
+  if(!newPw)return;
+  const r=await api(`/api/school/${currentSchool.code}/admin/reset`,'POST',{adminPassword:currentPassword,username,newPassword:newPw});
+  if(r.data.success){showMsg('user-msg',`Password reset for ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
+}
+async function renameUser(username){
+  const newName=prompt(`New username for "${username}":`);
+  if(!newName)return;
+  const r=await api(`/api/school/${currentSchool.code}/admin/rename`,'POST',{adminPassword:currentPassword,username,newUsername:newName});
+  if(r.data.success){const u=loadedUsers.find(x=>x.username===username);if(u)u.username=newName.toLowerCase().trim();renderUserList();showMsg('user-msg',`Renamed to ${newName}. They'll need to log in again with the new username.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
+}
+async function deleteUser(username){
+  if(!confirm(`Delete account "${username}"? This removes their schedule too.`))return;
+  const r=await api(`/api/school/${currentSchool.code}/admin/delete-user`,'POST',{adminPassword:currentPassword,username});
+  if(r.data.success){loadedUsers=loadedUsers.filter(x=>x.username!==username);renderUserList();showMsg('user-msg',`Deleted ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
+}
 
 function showSuperLogin(){showSection('super-login-section');}
 function backToAuth(){showSection('auth-section');}
