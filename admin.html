@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
 <style>
-:root { --bg: #f8fafc; --surface: #fff; --text: #1e293b; --text2: #64748b; --blue: #4F46E5; --blue-light: #EEF2FF; --red: #dc2626; --green: #16a34a; --border: #e2e8f0; --radius: 12px; --font: -apple-system, 'Segoe UI', system-ui, sans-serif; }
+:root { --bg: #f8fafc; --surface: #fff; --text: #1e293b; --text2: #64748b; --blue: #4F46E5; --blue-light: #EEF2FF; --red: #dc2626; --green: #16a34a; --purple: #7C3AED; --border: #e2e8f0; --radius: 12px; --font: -apple-system, 'Segoe UI', system-ui, sans-serif; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
-.container { max-width: 640px; margin: 0 auto; padding: 32px 20px 80px; }
+.container { max-width: 680px; margin: 0 auto; padding: 32px 20px 80px; }
 h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
 h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
 .subtitle { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
@@ -20,6 +20,11 @@ input:focus { border-color: var(--blue); }
 .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: var(--font); border: none; cursor: pointer; transition: all 0.2s; }
 .btn-blue { background: var(--blue); color: white; }
 .btn-blue:hover { background: #4338CA; }
+.btn-purple { background: var(--purple); color: white; }
+.btn-purple:hover { background: #6D28D9; }
+.btn-red { background: var(--red); color: white; font-size: 12px; padding: 6px 10px; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text2); font-size: 12px; padding: 6px 10px; }
+.btn-outline:hover { border-color: var(--text2); color: var(--text); }
 .row { display: flex; gap: 10px; align-items: end; }
 .row > * { flex: 1; }
 .row .narrow { flex: 0 0 90px; }
@@ -32,36 +37,68 @@ input:focus { border-color: var(--blue); }
 .section { display: none; }
 .section.active { display: block; }
 .school-badge { display: inline-block; padding: 4px 12px; background: var(--blue); color: white; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+.super-badge { display: inline-block; padding: 4px 12px; background: var(--purple); color: white; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
 .back-link { color: var(--text2); font-size: 13px; cursor: pointer; margin-bottom: 20px; display: inline-block; }
 .back-link:hover { color: var(--text); }
+.user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+.user-row .uinfo strong { font-size: 14px; }
+.user-row .uinfo span { display: block; font-size: 11px; color: var(--text2); }
+.user-actions { display: flex; gap: 6px; }
+.super-link { display: block; text-align: center; margin-top: 20px; color: #cbd5e1; font-size: 12px; cursor: pointer; }
+.super-link:hover { color: var(--purple); }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Admin Dashboard</h1>
   <p class="subtitle">Manage your school's schedule</p>
+
   <div id="auth-section" class="section active">
     <div class="card">
       <h3>Log into your school</h3>
       <label>School Code</label>
-      <input type="text" id="login-code" placeholder="e.g. NJIS" style="text-transform:uppercase">
+      <input type="text" id="login-code" placeholder="e.g. NIS" style="text-transform:uppercase">
       <label>Admin Password</label>
       <input type="password" id="login-pass" placeholder="Your admin password">
       <button class="btn btn-blue" onclick="adminLogin()">Log In</button>
       <div id="login-msg"></div>
     </div>
+    <div class="super-link" onclick="showSuperLogin()">Super Administrator</div>
+  </div>
+
+  <div id="super-login-section" class="section">
+    <span class="back-link" onclick="backToAuth()">&larr; Back</span>
     <div class="card">
-      <h3>Register a new school</h3>
-      <label>School Code (short, e.g. NJIS)</label>
-      <input type="text" id="reg-code" placeholder="NJIS" style="text-transform:uppercase">
-      <label>School Name</label>
-      <input type="text" id="reg-name" placeholder="Nanjing International School">
-      <label>Admin Password</label>
-      <input type="password" id="reg-pass" placeholder="Choose a password">
-      <button class="btn btn-blue" onclick="createSchool()">Create School</button>
-      <div id="reg-msg"></div>
+      <h3>Super Administrator</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Master access to all schools and admins.</p>
+      <label>Super Password</label>
+      <input type="password" id="super-pass" placeholder="Super password">
+      <button class="btn btn-purple" onclick="superLogin()">Enter</button>
+      <div id="super-msg"></div>
     </div>
   </div>
+
+  <div id="super-section" class="section">
+    <span class="back-link" onclick="superLogout()">&larr; Log out</span>
+    <div class="super-badge">SUPER ADMIN</div>
+    <div class="card">
+      <h3>Create New School</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Only super admins can create schools and admin accounts.</p>
+      <label>School Code (short, e.g. NIS)</label>
+      <input type="text" id="sc-code" placeholder="NIS" style="text-transform:uppercase">
+      <label>School Name</label>
+      <input type="text" id="sc-name" placeholder="Nanjing International School">
+      <label>Admin Password</label>
+      <input type="password" id="sc-pass" placeholder="Password for this school's admin">
+      <button class="btn btn-purple" onclick="superCreateSchool()">Create School</button>
+      <div id="sc-msg"></div>
+    </div>
+    <div class="card">
+      <h3>All Schools</h3>
+      <div id="super-schools"></div>
+    </div>
+  </div>
+
   <div id="dashboard-section" class="section">
     <span class="back-link" onclick="logout()">&larr; Log out</span>
     <div id="school-badge"></div>
@@ -79,7 +116,7 @@ input:focus { border-color: var(--blue); }
     </div>
     <div class="card">
       <h3>Holidays / No-School Days</h3>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Holidays are skipped in the rotation count. Add a single day or a range (leave "To" empty for one day).</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Add a single day or a range (leave "To" empty for one day).</p>
       <div class="row">
         <div><label>From</label><input type="date" id="holiday-start"></div>
         <div><label>To (optional)</label><input type="date" id="holiday-end"></div>
@@ -89,99 +126,106 @@ input:focus { border-color: var(--blue); }
       <div id="holiday-msg"></div>
     </div>
     <div class="card">
+      <h3>Student Accounts</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Reset passwords, rename, or remove student accounts.</p>
+      <div id="user-list"></div>
+      <div id="user-msg"></div>
+    </div>
+    <div class="card">
       <h3>Student Link</h3>
       <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Share this with students. They enter your school code on setup:</p>
       <div id="student-link" style="font-size:14px;font-weight:600;word-break:break-all;padding:10px;background:var(--blue-light);border-radius:8px;color:var(--blue)"></div>
     </div>
   </div>
 </div>
+
 <script>
 const API_BASE = 'https://schedule-api.managebac.workers.dev';
-let currentSchool = null;
-let currentPassword = '';
-async function api(path, method = 'GET', body = null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(API_BASE + path, opts);
-  return { status: r.status, data: await r.json() };
+const STUDENT_URL = 'https://thisismyusernameijustchoseit.github.io/IBmanagebachub/';
+let currentSchool = null, currentPassword = '', superPassword = '';
+
+async function api(path, method='GET', body=null){const opts={method,headers:{'Content-Type':'application/json'}};if(body)opts.body=JSON.stringify(body);const r=await fetch(API_BASE+path,opts);let data={};try{data=await r.json();}catch(e){}return {status:r.status,data};}
+function showMsg(id,t,type){document.getElementById(id).innerHTML=`<div class="msg ${type}">${t}</div>`;}
+function showSection(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+async function adminLogin(){
+  const code=document.getElementById('login-code').value.trim().toUpperCase();
+  const pw=document.getElementById('login-pass').value;
+  if(!code||!pw){showMsg('login-msg','Enter code and password.','err');return;}
+  const r=await api(`/api/school/${code}`);
+  if(r.status!==200){showMsg('login-msg','School not found.','err');return;}
+  const verify=await api(`/api/school/${code}`,'PUT',{adminPassword:pw,referenceDate:r.data.referenceDate,referenceDay:r.data.referenceDay});
+  if(verify.status===403){showMsg('login-msg','Wrong password.','err');return;}
+  currentSchool=verify.data.school||r.data;currentPassword=pw;renderDashboard();
 }
-function showMsg(id, text, type) { document.getElementById(id).innerHTML = `<div class="msg ${type}">${text}</div>`; }
-async function createSchool() {
-  const code = document.getElementById('reg-code').value.trim().toUpperCase();
-  const name = document.getElementById('reg-name').value.trim();
-  const pw = document.getElementById('reg-pass').value;
-  if (!code || !name || !pw) { showMsg('reg-msg', 'Fill in all fields.', 'err'); return; }
-  const r = await api('/api/school/create', 'POST', { code, name, adminPassword: pw });
-  if (r.data.success) {
-    showMsg('reg-msg', `School "${code}" created! Logging in...`, 'ok');
-    document.getElementById('login-code').value = code;
-    document.getElementById('login-pass').value = pw;
-    setTimeout(() => adminLogin(), 500);
-  } else { showMsg('reg-msg', r.data.error || 'Failed.', 'err'); }
-}
-async function adminLogin() {
-  const code = document.getElementById('login-code').value.trim().toUpperCase();
-  const pw = document.getElementById('login-pass').value;
-  if (!code || !pw) { showMsg('login-msg', 'Enter code and password.', 'err'); return; }
-  const r = await api(`/api/school/${code}`);
-  if (r.status !== 200) { showMsg('login-msg', 'School not found.', 'err'); return; }
-  const verify = await api(`/api/school/${code}`, 'PUT', { adminPassword: pw, referenceDate: r.data.referenceDate, referenceDay: r.data.referenceDay });
-  if (verify.status === 403) { showMsg('login-msg', 'Wrong password.', 'err'); return; }
-  currentSchool = verify.data.school || r.data;
-  currentPassword = pw;
-  renderDashboard();
-}
-function logout() {
-  currentSchool = null; currentPassword = '';
-  document.getElementById('auth-section').classList.add('active');
-  document.getElementById('dashboard-section').classList.remove('active');
-}
-function renderDashboard() {
-  document.getElementById('auth-section').classList.remove('active');
-  document.getElementById('dashboard-section').classList.add('active');
-  document.getElementById('school-badge').innerHTML = `<div class="school-badge">${currentSchool.code}</div><h2>${currentSchool.name}</h2>`;
-  document.getElementById('dash-ref-date').value = currentSchool.referenceDate || '';
-  document.getElementById('dash-ref-day').value = currentSchool.referenceDay || 1;
+function logout(){currentSchool=null;currentPassword='';showSection('auth-section');}
+function renderDashboard(){
+  showSection('dashboard-section');
+  document.getElementById('school-badge').innerHTML=`<div class="school-badge">${currentSchool.code}</div><h2>${currentSchool.name}</h2>`;
+  document.getElementById('dash-ref-date').value=currentSchool.referenceDate||'';
+  document.getElementById('dash-ref-day').value=currentSchool.referenceDay||1;
   renderHolidays();
-  document.getElementById('student-link').textContent = `https://thisismyusernameijustchoseit.github.io/IBmanagebachub/ → Code: ${currentSchool.code}`;
+  loadUsers();
+  document.getElementById('student-link').textContent=`${STUDENT_URL} → Code: ${currentSchool.code}`;
 }
-async function updateRotation() {
-  const date = document.getElementById('dash-ref-date').value;
-  const day = +document.getElementById('dash-ref-day').value;
-  const r = await api(`/api/school/${currentSchool.code}`, 'PUT', { adminPassword: currentPassword, referenceDate: date, referenceDay: day });
-  if (r.data.success) { currentSchool = r.data.school; showMsg('rotation-msg', 'Rotation updated!', 'ok'); }
-  else { showMsg('rotation-msg', r.data.error || 'Failed.', 'err'); }
+async function updateRotation(){
+  const date=document.getElementById('dash-ref-date').value;const day=+document.getElementById('dash-ref-day').value;
+  const r=await api(`/api/school/${currentSchool.code}`,'PUT',{adminPassword:currentPassword,referenceDate:date,referenceDay:day});
+  if(r.data.success){currentSchool=r.data.school;showMsg('rotation-msg','Rotation updated!','ok');}else{showMsg('rotation-msg',r.data.error||'Failed.','err');}
 }
-function renderHolidays() {
-  const list = document.getElementById('holiday-list');
-  const holidays = currentSchool.holidays || [];
-  if (!holidays.length) { list.innerHTML = '<span style="font-size:13px;color:var(--text2)">No holidays set.</span>'; return; }
-  list.innerHTML = holidays.sort().map(h => `<div class="holiday-tag">${h}<button onclick="removeHoliday('${h}')">&times;</button></div>`).join('');
+function renderHolidays(){
+  const list=document.getElementById('holiday-list');const holidays=currentSchool.holidays||[];
+  if(!holidays.length){list.innerHTML='<span style="font-size:13px;color:var(--text2)">No holidays set.</span>';return;}
+  list.innerHTML=holidays.sort().map(h=>`<div class="holiday-tag">${h}<button onclick="removeHoliday('${h}')">&times;</button></div>`).join('');
 }
-async function addHoliday() {
-  const start = document.getElementById('holiday-start').value;
-  const end = document.getElementById('holiday-end').value;
-  if (!start) return;
-  const holidays = [...(currentSchool.holidays || [])];
-  const dates = expandRange(start, end || start);
-  dates.forEach(d => { if (!holidays.includes(d)) holidays.push(d); });
-  const r = await api(`/api/school/${currentSchool.code}/holidays`, 'PUT', { adminPassword: currentPassword, holidays });
-  if (r.data.success) { currentSchool.holidays = r.data.holidays; renderHolidays(); document.getElementById('holiday-start').value = ''; document.getElementById('holiday-end').value = ''; showMsg('holiday-msg', `Added ${dates.length} day${dates.length>1?'s':''}!`, 'ok'); }
-  else { showMsg('holiday-msg', r.data.error || 'Failed.', 'err'); }
+async function addHoliday(){
+  const start=document.getElementById('holiday-start').value;const end=document.getElementById('holiday-end').value;
+  if(!start)return;const holidays=[...(currentSchool.holidays||[])];const dates=expandRange(start,end||start);
+  dates.forEach(d=>{if(!holidays.includes(d))holidays.push(d);});
+  const r=await api(`/api/school/${currentSchool.code}/holidays`,'PUT',{adminPassword:currentPassword,holidays});
+  if(r.data.success){currentSchool.holidays=r.data.holidays;renderHolidays();document.getElementById('holiday-start').value='';document.getElementById('holiday-end').value='';showMsg('holiday-msg',`Added ${dates.length} day${dates.length>1?'s':''}!`,'ok');}
+  else{showMsg('holiday-msg',r.data.error||'Failed.','err');}
 }
-function expandRange(start, end) {
-  const result = [];
-  const s = new Date(start), e = new Date(end);
-  if (e < s) return [start];
-  const c = new Date(s);
-  while (c <= e) { result.push(c.toISOString().slice(0,10)); c.setDate(c.getDate()+1); }
-  return result;
+function expandRange(start,end){const result=[];const s=new Date(start),e=new Date(end);if(e<s)return[start];const c=new Date(s);while(c<=e){result.push(c.toISOString().slice(0,10));c.setDate(c.getDate()+1);}return result;}
+async function removeHoliday(date){const holidays=(currentSchool.holidays||[]).filter(h=>h!==date);const r=await api(`/api/school/${currentSchool.code}/holidays`,'PUT',{adminPassword:currentPassword,holidays});if(r.data.success){currentSchool.holidays=r.data.holidays;renderHolidays();}}
+
+async function loadUsers(){
+  const r=await api(`/api/school/${currentSchool.code}/admin/users`,'POST',{adminPassword:currentPassword});
+  const list=document.getElementById('user-list');
+  if(!r.data.users||!r.data.users.length){list.innerHTML='<span style="font-size:13px;color:var(--text2)">No student accounts yet.</span>';return;}
+  list.innerHTML=r.data.users.map(u=>`<div class="user-row"><div class="uinfo"><strong>${u.username}</strong><span>${u.hasSchedule?'Schedule set':'No schedule yet'} · joined ${new Date(u.createdAt).toLocaleDateString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="resetUser('${u.username}')">Reset PW</button><button class="btn btn-outline" onclick="renameUser('${u.username}')">Rename</button><button class="btn btn-red" onclick="deleteUser('${u.username}')">Delete</button></div></div>`).join('');
 }
-async function removeHoliday(date) {
-  const holidays = (currentSchool.holidays || []).filter(h => h !== date);
-  const r = await api(`/api/school/${currentSchool.code}/holidays`, 'PUT', { adminPassword: currentPassword, holidays });
-  if (r.data.success) { currentSchool.holidays = r.data.holidays; renderHolidays(); }
+async function resetUser(username){const newPw=prompt(`New password for "${username}":`);if(!newPw)return;const r=await api(`/api/school/${currentSchool.code}/admin/reset`,'POST',{adminPassword:currentPassword,username,newPassword:newPw});if(r.data.success){showMsg('user-msg',`Password reset for ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}}
+async function renameUser(username){const newName=prompt(`New username for "${username}":`);if(!newName)return;const r=await api(`/api/school/${currentSchool.code}/admin/rename`,'POST',{adminPassword:currentPassword,username,newUsername:newName});if(r.data.success){showMsg('user-msg',`Renamed to ${newName}.`,'ok');loadUsers();}else{showMsg('user-msg',r.data.error||'Failed.','err');}}
+async function deleteUser(username){if(!confirm(`Delete account "${username}"? This removes their schedule too.`))return;const r=await api(`/api/school/${currentSchool.code}/admin/delete-user`,'POST',{adminPassword:currentPassword,username});if(r.data.success){showMsg('user-msg',`Deleted ${username}.`,'ok');loadUsers();}else{showMsg('user-msg',r.data.error||'Failed.','err');}}
+
+function showSuperLogin(){showSection('super-login-section');}
+function backToAuth(){showSection('auth-section');}
+function superLogout(){superPassword='';showSection('auth-section');}
+async function superLogin(){
+  const pw=document.getElementById('super-pass').value;
+  if(!pw){showMsg('super-msg','Enter the super password.','err');return;}
+  const r=await api('/api/super/schools','POST',{superPassword:pw});
+  if(r.status!==200){showMsg('super-msg','Wrong super password.','err');return;}
+  superPassword=pw;renderSuper(r.data.schools);
 }
+function renderSuper(schools){
+  showSection('super-section');
+  const el=document.getElementById('super-schools');
+  if(!schools||!schools.length){el.innerHTML='<span style="font-size:13px;color:var(--text2)">No schools yet.</span>';return;}
+  el.innerHTML=schools.map(s=>`<div class="user-row"><div class="uinfo"><strong>${s.code} · ${s.name}</strong><span>Ref: ${s.referenceDate} = Day ${s.referenceDay} · ${s.holidays} holidays</span></div><div class="user-actions"><button class="btn btn-outline" onclick="superResetAdmin('${s.code}')">Reset Admin PW</button><button class="btn btn-red" onclick="superDeleteSchool('${s.code}')">Delete</button></div></div>`).join('');
+}
+async function superCreateSchool(){
+  const code=document.getElementById('sc-code').value.trim().toUpperCase();
+  const name=document.getElementById('sc-name').value.trim();
+  const pw=document.getElementById('sc-pass').value;
+  if(!code||!name||!pw){showMsg('sc-msg','Fill in all fields.','err');return;}
+  const r=await api('/api/super/create-school','POST',{superPassword,code,name,adminPassword:pw});
+  if(r.data.success){showMsg('sc-msg',`School "${code}" created.`,'ok');document.getElementById('sc-code').value='';document.getElementById('sc-name').value='';document.getElementById('sc-pass').value='';const re=await api('/api/super/schools','POST',{superPassword});renderSuper(re.data.schools);}
+  else{showMsg('sc-msg',r.data.error||'Failed.','err');}
+}
+async function superResetAdmin(code){const newPw=prompt(`New admin password for ${code}:`);if(!newPw)return;const r=await api('/api/super/reset-admin','POST',{superPassword,code,newPassword:newPw});if(r.data.success){alert(`Admin password reset for ${code}.`);}else{alert(r.data.error||'Failed.');}}
+async function superDeleteSchool(code){if(!confirm(`Delete school ${code} and ALL its students? This cannot be undone.`))return;const r=await api('/api/super/delete-school','POST',{superPassword,code});if(r.data.success){const re=await api('/api/super/schools','POST',{superPassword});renderSuper(re.data.schools);}else{alert(r.data.error||'Failed.');}}
 </script>
 </body>
 </html>
