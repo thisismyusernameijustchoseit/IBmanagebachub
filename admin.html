@@ -40,10 +40,10 @@ input:focus { border-color: var(--blue); }
 .super-badge { display: inline-block; padding: 4px 12px; background: var(--purple); color: white; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
 .back-link { color: var(--text2); font-size: 13px; cursor: pointer; margin-bottom: 20px; display: inline-block; }
 .back-link:hover { color: var(--text); }
-.user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+.user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
 .user-row .uinfo strong { font-size: 14px; }
 .user-row .uinfo span { display: block; font-size: 11px; color: var(--text2); }
-.user-actions { display: flex; gap: 6px; }
+.user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .super-link { display: block; text-align: center; margin-top: 20px; color: #cbd5e1; font-size: 12px; cursor: pointer; }
 .super-link:hover { color: var(--purple); }
 </style>
@@ -127,7 +127,7 @@ input:focus { border-color: var(--blue); }
     </div>
     <div class="card">
       <h3>Student Accounts</h3>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Reset passwords, rename, or remove student accounts.</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Message, reset passwords, rename, or remove student accounts.</p>
       <div id="user-list"></div>
       <div id="user-msg"></div>
     </div>
@@ -142,7 +142,8 @@ input:focus { border-color: var(--blue); }
 <script>
 const API_BASE = 'https://schedule-api.managebac.workers.dev';
 const STUDENT_URL = 'https://thisismyusernameijustchoseit.github.io/IBmanagebachub/';
-let currentSchool = null, currentPassword = '', superPassword = '', loadedUsers = [];
+let currentSchool = null, currentPassword = '', superPassword = '', loadedUsers = [], actingSuper = false;
+function adminAuth(){ return actingSuper ? { superPassword } : { adminPassword: currentPassword }; }
 
 async function api(path, method='GET', body=null){const opts={method,headers:{'Content-Type':'application/json'}};if(body)opts.body=JSON.stringify(body);const r=await fetch(API_BASE+path,opts);let data={};try{data=await r.json();}catch(e){}return {status:r.status,data};}
 function showMsg(id,t,type){document.getElementById(id).innerHTML=`<div class="msg ${type}">${t}</div>`;}
@@ -156,12 +157,12 @@ async function adminLogin(){
   if(r.status!==200){showMsg('login-msg','School not found.','err');return;}
   const verify=await api(`/api/school/${code}`,'PUT',{adminPassword:pw,referenceDate:r.data.referenceDate,referenceDay:r.data.referenceDay});
   if(verify.status===403){showMsg('login-msg','Wrong password.','err');return;}
-  currentSchool=verify.data.school||r.data;currentPassword=pw;renderDashboard();
+  actingSuper=false;currentSchool=verify.data.school||r.data;currentPassword=pw;renderDashboard();
 }
-function logout(){currentSchool=null;currentPassword='';showSection('auth-section');}
+function logout(){currentSchool=null;currentPassword='';if(actingSuper){actingSuper=false;showSection('super-section');}else{showSection('auth-section');}}
 function renderDashboard(){
   showSection('dashboard-section');
-  document.getElementById('school-badge').innerHTML=`<div class="school-badge">${currentSchool.code}</div><h2>${currentSchool.name}</h2>`;
+  document.getElementById('school-badge').innerHTML=`<div class="school-badge">${currentSchool.code}</div><h2>${currentSchool.name}${actingSuper?' <span style="font-size:12px;color:var(--purple)">(super)</span>':''}</h2>`;
   document.getElementById('dash-ref-date').value=currentSchool.referenceDate||'';
   document.getElementById('dash-ref-day').value=currentSchool.referenceDay||1;
   renderHolidays();
@@ -170,7 +171,7 @@ function renderDashboard(){
 }
 async function updateRotation(){
   const date=document.getElementById('dash-ref-date').value;const day=+document.getElementById('dash-ref-day').value;
-  const r=await api(`/api/school/${currentSchool.code}`,'PUT',{adminPassword:currentPassword,referenceDate:date,referenceDay:day});
+  const r=await api(`/api/school/${currentSchool.code}`,'PUT',{...adminAuth(),referenceDate:date,referenceDay:day});
   if(r.data.success){currentSchool=r.data.school;showMsg('rotation-msg','Rotation updated!','ok');}else{showMsg('rotation-msg',r.data.error||'Failed.','err');}
 }
 function renderHolidays(){
@@ -182,38 +183,50 @@ async function addHoliday(){
   const start=document.getElementById('holiday-start').value;const end=document.getElementById('holiday-end').value;
   if(!start)return;const holidays=[...(currentSchool.holidays||[])];const dates=expandRange(start,end||start);
   dates.forEach(d=>{if(!holidays.includes(d))holidays.push(d);});
-  const r=await api(`/api/school/${currentSchool.code}/holidays`,'PUT',{adminPassword:currentPassword,holidays});
+  const r=await api(`/api/school/${currentSchool.code}/holidays`,'PUT',{...adminAuth(),holidays});
   if(r.data.success){currentSchool.holidays=r.data.holidays;renderHolidays();document.getElementById('holiday-start').value='';document.getElementById('holiday-end').value='';showMsg('holiday-msg',`Added ${dates.length} day${dates.length>1?'s':''}!`,'ok');}
   else{showMsg('holiday-msg',r.data.error||'Failed.','err');}
 }
 function expandRange(start,end){const result=[];const s=new Date(start),e=new Date(end);if(e<s)return[start];const c=new Date(s);while(c<=e){result.push(c.toISOString().slice(0,10));c.setDate(c.getDate()+1);}return result;}
-async function removeHoliday(date){const holidays=(currentSchool.holidays||[]).filter(h=>h!==date);const r=await api(`/api/school/${currentSchool.code}/holidays`,'PUT',{adminPassword:currentPassword,holidays});if(r.data.success){currentSchool.holidays=r.data.holidays;renderHolidays();}}
+async function removeHoliday(date){const holidays=(currentSchool.holidays||[]).filter(h=>h!==date);const r=await api(`/api/school/${currentSchool.code}/holidays`,'PUT',{...adminAuth(),holidays});if(r.data.success){currentSchool.holidays=r.data.holidays;renderHolidays();}}
 
 async function loadUsers(){
-  const r=await api(`/api/school/${currentSchool.code}/admin/users`,'POST',{adminPassword:currentPassword});
+  const r=await api(`/api/school/${currentSchool.code}/admin/users`,'POST',adminAuth());
   loadedUsers=r.data.users||[];
   renderUserList();
 }
 function renderUserList(){
   const list=document.getElementById('user-list');
   if(!loadedUsers.length){list.innerHTML='<span style="font-size:13px;color:var(--text2)">No student accounts yet.</span>';return;}
-  list.innerHTML=loadedUsers.map(u=>`<div class="user-row"><div class="uinfo"><strong>${u.username}</strong><span>${u.hasSchedule?'Schedule set':'No schedule yet'} · joined ${new Date(u.createdAt).toLocaleDateString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="resetUser('${u.username}')">Reset PW</button><button class="btn btn-outline" onclick="renameUser('${u.username}')">Rename</button><button class="btn btn-red" onclick="deleteUser('${u.username}')">Delete</button></div></div>`).join('');
+  list.innerHTML=`<div style="margin-bottom:12px"><button class="btn btn-blue" style="font-size:13px;padding:8px 14px" onclick="messageAll()">Message All Students</button></div>`+loadedUsers.map(u=>`<div class="user-row"><div class="uinfo"><strong>${u.username}</strong><span>${u.hasSchedule?'Schedule set':'No schedule yet'} · joined ${new Date(u.createdAt).toLocaleDateString()}</span></div><div class="user-actions"><button class="btn btn-outline" onclick="messageUser('${u.username}')">Message</button><button class="btn btn-outline" onclick="resetUser('${u.username}')">Reset PW</button><button class="btn btn-outline" onclick="renameUser('${u.username}')">Rename</button><button class="btn btn-red" onclick="deleteUser('${u.username}')">Delete</button></div></div>`).join('');
+}
+async function messageUser(username){
+  const text=prompt(`Message to send to "${username}":`);
+  if(!text)return;
+  const r=await api(`/api/school/${currentSchool.code}/admin/message`,'POST',{...adminAuth(),username,text});
+  if(r.data.success){showMsg('user-msg',`Message sent to ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
+}
+async function messageAll(){
+  const text=prompt(`Message to send to ALL ${loadedUsers.length} students:`);
+  if(!text)return;
+  const r=await api(`/api/school/${currentSchool.code}/admin/message`,'POST',{...adminAuth(),usernames:loadedUsers.map(u=>u.username),text});
+  if(r.data.success){showMsg('user-msg',`Message sent to ${r.data.sent} students.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
 }
 async function resetUser(username){
   const newPw=prompt(`New password for "${username}":`);
   if(!newPw)return;
-  const r=await api(`/api/school/${currentSchool.code}/admin/reset`,'POST',{adminPassword:currentPassword,username,newPassword:newPw});
+  const r=await api(`/api/school/${currentSchool.code}/admin/reset`,'POST',{...adminAuth(),username,newPassword:newPw});
   if(r.data.success){showMsg('user-msg',`Password reset for ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
 }
 async function renameUser(username){
   const newName=prompt(`New username for "${username}":`);
   if(!newName)return;
-  const r=await api(`/api/school/${currentSchool.code}/admin/rename`,'POST',{adminPassword:currentPassword,username,newUsername:newName});
+  const r=await api(`/api/school/${currentSchool.code}/admin/rename`,'POST',{...adminAuth(),username,newUsername:newName});
   if(r.data.success){const u=loadedUsers.find(x=>x.username===username);if(u)u.username=newName.toLowerCase().trim();renderUserList();showMsg('user-msg',`Renamed to ${newName}. They'll need to log in again with the new username.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
 }
 async function deleteUser(username){
   if(!confirm(`Delete account "${username}"? This removes their schedule too.`))return;
-  const r=await api(`/api/school/${currentSchool.code}/admin/delete-user`,'POST',{adminPassword:currentPassword,username});
+  const r=await api(`/api/school/${currentSchool.code}/admin/delete-user`,'POST',{...adminAuth(),username});
   if(r.data.success){loadedUsers=loadedUsers.filter(x=>x.username!==username);renderUserList();showMsg('user-msg',`Deleted ${username}.`,'ok');}else{showMsg('user-msg',r.data.error||'Failed.','err');}
 }
 
@@ -231,7 +244,12 @@ function renderSuper(schools){
   showSection('super-section');
   const el=document.getElementById('super-schools');
   if(!schools||!schools.length){el.innerHTML='<span style="font-size:13px;color:var(--text2)">No schools yet.</span>';return;}
-  el.innerHTML=schools.map(s=>`<div class="user-row"><div class="uinfo"><strong>${s.code} · ${s.name}</strong><span>Ref: ${s.referenceDate} = Day ${s.referenceDay} · ${s.holidays} holidays</span></div><div class="user-actions"><button class="btn btn-outline" onclick="superResetAdmin('${s.code}')">Reset Admin PW</button><button class="btn btn-red" onclick="superDeleteSchool('${s.code}')">Delete</button></div></div>`).join('');
+  el.innerHTML=schools.map(s=>`<div class="user-row"><div class="uinfo"><strong>${s.code} · ${s.name}</strong><span>Ref: ${s.referenceDate} = Day ${s.referenceDay} · ${s.holidays} holidays</span></div><div class="user-actions"><button class="btn btn-blue" style="font-size:12px;padding:6px 10px" onclick="enterSchoolAsSuper('${s.code}')">Manage</button><button class="btn btn-outline" onclick="superResetAdmin('${s.code}')">Reset Admin PW</button><button class="btn btn-red" onclick="superDeleteSchool('${s.code}')">Delete</button></div></div>`).join('');
+}
+async function enterSchoolAsSuper(code){
+  const r=await api(`/api/school/${code}`);
+  if(r.status!==200){alert('Could not load school.');return;}
+  currentSchool=r.data;currentPassword='';actingSuper=true;renderDashboard();
 }
 async function superCreateSchool(){
   const code=document.getElementById('sc-code').value.trim().toUpperCase();
