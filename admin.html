@@ -20,15 +20,12 @@ input:focus { border-color: var(--blue); }
 .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: var(--font); border: none; cursor: pointer; transition: all 0.2s; }
 .btn-blue { background: var(--blue); color: white; }
 .btn-blue:hover { background: #4338CA; }
-.btn-red { background: var(--red); color: white; font-size: 13px; padding: 6px 12px; }
-.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text2); }
 .row { display: flex; gap: 10px; align-items: end; }
 .row > * { flex: 1; }
-.row .narrow { flex: 0 0 100px; }
+.row .narrow { flex: 0 0 90px; }
 .msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
 .msg.ok { background: #f0fdf4; color: var(--green); }
 .msg.err { background: #fef2f2; color: var(--red); }
-.msg.info { background: var(--blue-light); color: var(--blue); }
 .holiday-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .holiday-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--blue-light); color: var(--blue); border-radius: 20px; font-size: 13px; font-weight: 600; }
 .holiday-tag button { background: none; border: none; color: var(--blue); cursor: pointer; font-size: 16px; line-height: 1; }
@@ -82,9 +79,10 @@ input:focus { border-color: var(--blue); }
     </div>
     <div class="card">
       <h3>Holidays / No-School Days</h3>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Holidays are skipped in the rotation count. Students' rotation days auto-adjust.</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Holidays are skipped in the rotation count. Add a single day or a range (leave "To" empty for one day).</p>
       <div class="row">
-        <div><label>Add Holiday</label><input type="date" id="holiday-date"></div>
+        <div><label>From</label><input type="date" id="holiday-start"></div>
+        <div><label>To (optional)</label><input type="date" id="holiday-end"></div>
         <div class="narrow" style="padding-bottom:14px"><button class="btn btn-blue" onclick="addHoliday()" style="width:100%">Add</button></div>
       </div>
       <div class="holiday-list" id="holiday-list"></div>
@@ -161,13 +159,23 @@ function renderHolidays() {
   list.innerHTML = holidays.sort().map(h => `<div class="holiday-tag">${h}<button onclick="removeHoliday('${h}')">&times;</button></div>`).join('');
 }
 async function addHoliday() {
-  const date = document.getElementById('holiday-date').value;
-  if (!date) return;
+  const start = document.getElementById('holiday-start').value;
+  const end = document.getElementById('holiday-end').value;
+  if (!start) return;
   const holidays = [...(currentSchool.holidays || [])];
-  if (!holidays.includes(date)) holidays.push(date);
+  const dates = expandRange(start, end || start);
+  dates.forEach(d => { if (!holidays.includes(d)) holidays.push(d); });
   const r = await api(`/api/school/${currentSchool.code}/holidays`, 'PUT', { adminPassword: currentPassword, holidays });
-  if (r.data.success) { currentSchool.holidays = r.data.holidays; renderHolidays(); document.getElementById('holiday-date').value = ''; showMsg('holiday-msg', 'Holiday added!', 'ok'); }
+  if (r.data.success) { currentSchool.holidays = r.data.holidays; renderHolidays(); document.getElementById('holiday-start').value = ''; document.getElementById('holiday-end').value = ''; showMsg('holiday-msg', `Added ${dates.length} day${dates.length>1?'s':''}!`, 'ok'); }
   else { showMsg('holiday-msg', r.data.error || 'Failed.', 'err'); }
+}
+function expandRange(start, end) {
+  const result = [];
+  const s = new Date(start), e = new Date(end);
+  if (e < s) return [start];
+  const c = new Date(s);
+  while (c <= e) { result.push(c.toISOString().slice(0,10)); c.setDate(c.getDate()+1); }
+  return result;
 }
 async function removeHoliday(date) {
   const holidays = (currentSchool.holidays || []).filter(h => h !== date);
