@@ -123,6 +123,14 @@ input:focus { border-color: var(--blue); }
       <div id="rotation-msg"></div>
     </div>
     <div class="card">
+      <h3>ManageBac Domain</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Your school's ManageBac address, used by the Schedule Sync extension (e.g. nanjing.managebac.cn).</p>
+      <label>Domain</label>
+      <input type="text" id="dash-mb-domain" placeholder="nanjing.managebac.cn">
+      <button class="btn btn-blue" onclick="updateDomain()">Save Domain</button>
+      <div id="domain-msg"></div>
+    </div>
+    <div class="card">
       <h3>Holidays / No-School Days</h3>
       <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Add a single day or a range (leave "To" empty for one day).</p>
       <div class="row">
@@ -179,6 +187,7 @@ function renderDashboard(){
   document.getElementById('school-badge').innerHTML=`<div class="school-badge">${currentSchool.code}</div><h2>${currentSchool.name}${actingSuper?' <span style="font-size:12px;color:var(--purple)">(super)</span>':''}</h2>`;
   document.getElementById('dash-ref-date').value=currentSchool.referenceDate||'';
   document.getElementById('dash-ref-day').value=currentSchool.referenceDay||1;
+  document.getElementById('dash-mb-domain').value=currentSchool.managebacDomain||'';
   renderHolidays();
   loadUsers();
   loadReports();
@@ -188,6 +197,11 @@ async function updateRotation(){
   const date=document.getElementById('dash-ref-date').value;const day=+document.getElementById('dash-ref-day').value;
   const r=await api(`/api/school/${currentSchool.code}`,'PUT',{...adminAuth(),referenceDate:date,referenceDay:day});
   if(r.data.success){currentSchool=r.data.school;showMsg('rotation-msg','Rotation updated!','ok');}else{showMsg('rotation-msg',r.data.error||'Failed.','err');}
+}
+async function updateDomain(){
+  const domain=document.getElementById('dash-mb-domain').value.trim();
+  const r=await api(`/api/school/${currentSchool.code}`,'PUT',{...adminAuth(),managebacDomain:domain});
+  if(r.data.success){currentSchool=r.data.school;showMsg('domain-msg','Domain saved!','ok');}else{showMsg('domain-msg',r.data.error||'Failed.','err');}
 }
 function renderHolidays(){
   const list=document.getElementById('holiday-list');const holidays=currentSchool.holidays||[];
